@@ -37,7 +37,9 @@ module Acmesmith
           sdomain = (domain.split(".") - hdomain.split(".")).join(".")
           expected_name = "#{challenge.record_name}.#{sdomain}"
           all_records = @client.domain_records.all(for_domain: hdomain, type: challenge.record_type)
-          matching_records = all_records.select { |r| r.name == expected_name && r.data == challenge.record_content }
+          # Delete all challenge records for this subdomain, not just the current one.
+          # This cleans up stale records from previous failed attempts.
+          matching_records = all_records.select { |r| r.name == expected_name }
           matching_records.each do |record|
             @client.domain_records.delete(for_domain: hdomain, id: record.id)
           end
