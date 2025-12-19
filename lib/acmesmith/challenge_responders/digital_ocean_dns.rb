@@ -35,9 +35,12 @@ module Acmesmith
         domain_and_challenges.each do |domain, challenge|
           hdomain = get_hdomain(domain)
           sdomain = (domain.split(".") - hdomain.split(".")).join(".")
+          expected_name = "#{challenge.record_name}.#{sdomain}"
           all_records = @client.domain_records.all(for_domain: hdomain, type: challenge.record_type)
-          record = all_records.select {|r| "#{challenge.record_name}.#{sdomain}" }.first
-          @client.domain_records.delete(for_domain: hdomain, id: record.id)
+          matching_records = all_records.select { |r| r.name == expected_name && r.data == challenge.record_content }
+          matching_records.each do |record|
+            @client.domain_records.delete(for_domain: hdomain, id: record.id)
+          end
         end
       end
 
