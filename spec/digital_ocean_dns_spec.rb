@@ -38,32 +38,23 @@ describe Acmesmith::ChallengeResponders::DigitalOceanDns do
       double('record', id: 789, name: '_acme-challenge.other', data: 'other-token')
     end
 
-    it 'deletes only the record matching both name and content' do
+    it 'deletes all records matching the challenge name, including stale ones' do
       allow(domain_records).to receive(:all)
         .with(for_domain: 'example.com', type: 'TXT')
         .and_return([matching_record, stale_record, unrelated_record])
 
       expect(domain_records).to receive(:delete)
         .with(for_domain: 'example.com', id: 123)
-        .once
+      expect(domain_records).to receive(:delete)
+        .with(for_domain: 'example.com', id: 456)
 
       responder.cleanup_all(['smtp.example.com', challenge])
     end
 
-    it 'does not delete records with wrong name' do
+    it 'does not delete records with different subdomain' do
       allow(domain_records).to receive(:all)
         .with(for_domain: 'example.com', type: 'TXT')
         .and_return([unrelated_record])
-
-      expect(domain_records).not_to receive(:delete)
-
-      responder.cleanup_all(['smtp.example.com', challenge])
-    end
-
-    it 'does not delete records with wrong content' do
-      allow(domain_records).to receive(:all)
-        .with(for_domain: 'example.com', type: 'TXT')
-        .and_return([stale_record])
 
       expect(domain_records).not_to receive(:delete)
 
